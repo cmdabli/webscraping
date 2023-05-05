@@ -1,0 +1,38 @@
+from urllib.request import urlopen, Request
+from bs4 import BeautifulSoup
+import keys
+from twilio.rest import Client
+
+url = 'https://coingecko.com'
+headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.3'}
+req = Request(url, headers=headers)
+webpage = urlopen(req).read()
+soup = BeautifulSoup(webpage, 'html.parser')
+tables = soup.findAll('table')
+title = soup.title
+client = Client(keys.accountSID, keys.auth_token)
+TwilioNumber = "+13204131456"
+myCell = "+13157511419"
+crypto_rows = soup.findAll('tr')
+
+for row in crypto_rows[1:6]:
+    td = row.findAll('td')
+    name = td[2].text
+    current_price = float(td[3].text.replace(',','').replace('$',''))
+    percent_change = float(td[4].text.replace('%',''))
+    corres_price = current_price * percent_change
+
+    print(name)
+    print(f"Current Price: ${current_price:.2f}")
+    print(f"Price change in 24 hours: {percent_change:.2f}%")
+    print(f"Corresponding Price: ${corres_price:,.2f}")
+    print()
+
+    if name == 'Bitcoin1BTC' and current_price < 30000:
+        text = client.messages.create(to=myCell, from_=TwilioNumber, body='Bitcoin value is less than $30000')
+    elif name == 'Bitcoin1BTC' and current_price > 30000:
+        text = client.messages.create(to=myCell, from_=TwilioNumber, body='Bitcoin value is more than $30000')
+    elif name == 'Ethereum2ETH' and current_price < 2000:
+        text = client.messages.create(to=myCell, from_=TwilioNumber, body='Ethereum value is less than $2000')
+    elif name == 'Ethereum2ETH' and current_price > 2000:
+        text = client.messages.create(to=myCell, from_=TwilioNumber, body='Ethereum value is more than $2000')
